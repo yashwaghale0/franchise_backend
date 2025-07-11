@@ -16,14 +16,19 @@ exports.loginUser = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, {
       expiresIn: "1h",
     });
-    res.json({ token, user: { id: user._id, email: user.email } });
+
+    console.log(user);
+    res.json({
+      token,
+      user: { id: user._id, email: user.email, role: user.role },
+    });
   } catch (err) {
     res.status(500).json({ msg: "Server error" });
   }
 };
 
 exports.signUp = async (req, res) => {
-  const { email, password } = req.body;
+  const { role, email, password } = req.body;
 
   try {
     // Check if user already exists
@@ -37,6 +42,7 @@ exports.signUp = async (req, res) => {
 
     // Create a new user
     const newUser = new User({
+      role,
       email,
       password: hashedPassword,
     });
@@ -48,7 +54,15 @@ exports.signUp = async (req, res) => {
       expiresIn: "1d",
     });
 
-    res.status(201).json({ token, message: "User Registered successfully" });
+    res.status(201).json({
+      token,
+      user: {
+        id: newUser._id,
+        email: newUser.email,
+        role: newUser.role,
+      },
+      message: "User Registered successfully",
+    });
   } catch (error) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
