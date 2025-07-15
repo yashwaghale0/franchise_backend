@@ -14,3 +14,17 @@ router.get("/", async (req, res) => {
 });
 
 module.exports = router;
+
+// Get a single franchise opportunity by ID
+router.get("/:id", async (req, res) => {
+  try {
+    const opportunity = await FranchiseOpportunity.findById(req.params.id);
+    if (!opportunity) {
+      return res.status(404).json({ message: "Franchise not found" });
+    }
+    res.json(opportunity);
+  } catch (error) {
+    console.error("Error fetching franchise:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});

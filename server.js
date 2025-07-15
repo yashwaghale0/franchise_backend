@@ -8,6 +8,7 @@ require("dotenv").config();
 
 const FranchiseOpportunity = require("./models/FranchiseOpportunity");
 const franchiseRoutes = require("./routes/franchiseRoutes");
+const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -25,6 +26,7 @@ app.use(cors());
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/opportunities", franchiseRoutes);
+app.use("/api/auth", authRoutes);
 
 // Ensure uploads dir exists
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
