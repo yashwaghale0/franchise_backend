@@ -9,7 +9,8 @@ require("dotenv").config();
 const FranchiseOpportunity = require("./models/FranchiseOpportunity");
 const franchiseRoutes = require("./routes/franchiseRoutes");
 const authRoutes = require("./routes/authRoutes");
-
+const {createFranchisee} = require("./controllers/franchiseController");
+const configs = require('./configs')
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -53,60 +54,25 @@ app.post(
     { name: "marketingBrochure", maxCount: 1 },
     { name: "galleryImages", maxCount: 5 }, // Allow multiple gallery images
   ]),
-  async (req, res) => {
-    try {
-      const formData = JSON.parse(req.body.formData);
-      const files = req.files;
-      console.log(files);
-
-      const getFileUrl = (field) =>
-        files[field] && files[field][0]
-          ? `${req.protocol}://${req.get("host")}/uploads/${
-              files[field][0].filename
-            }`
-          : "";
-
-      formData.fddFile = getFileUrl("fddFile");
-      formData.brandLogo = getFileUrl("brandLogo");
-      formData.brandBanner = getFileUrl("brandBanner");
-      formData.marketingBrochure = getFileUrl("marketingBrochure");
-
-      formData.galleryImages = files.galleryImages
-        ? files.galleryImages.map(
-            (img) =>
-              `${req.protocol}://${req.get("host")}/uploads/${img.filename}`
-          )
-        : [];
-
-      const opportunity = new FranchiseOpportunity(formData);
-      await opportunity.save();
-
-      res.status(200).json({
-        message: "Form and files uploaded successfully",
-        data: opportunity,
-      });
-    } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ message: "Server error", error });
-    }
-  }
+  createFranchisee
 );
 
 // Direct image upload
 app.post("/api/upload", upload.single("image"), (req, res) => {
   if (!req.file) return res.status(400).json({ message: "No image uploaded" });
 
-  const fileUrl = `${req.protocol}://${req.get("host")}/uploads/${
+  const fileUrl = `${configs.IMAGE_BASE_URL}/${
     req.file.filename
   }`;
   res.status(200).json({ message: "Image uploaded", url: fileUrl });
 });
 
-// Fetch image by filename
-app.get("/api/images/:filename", (req, res) => {
-  const filePath = path.join(__dirname, "uploads", req.params.filename);
-  res.sendFile(filePath);
-});
+//incase accidentally routed to the main server for images
+app.use('/images/', express.static(path.join(__dirname, 'uploads'), {
+  maxAge: '10d', // Cache for 1 day
+  etag: true,
+  lastModified: true,
+}));
 
 // Health check
 app.get("/", (req, res) => {

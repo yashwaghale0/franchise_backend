@@ -1,0 +1,34 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - deploy
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      -name: Sync Files
+        uses: SamKirland/FTP-Deploy-Action@v4.3.4
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./
+          remote-dir: /franchise_backend
+          sync-type: mirror
+          delete: true
+          verbose: true
+          exclude: |
+            - .git
+            - .github
+            - .env
+            - node_modules
+            - package-lock.json
+            - package.json
+            - README.md
+            - .gitignore
