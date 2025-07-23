@@ -20,7 +20,7 @@ jobs:
           username: ${{ secrets.FTP_USERNAME }}
           password: ${{ secrets.FTP_PASSWORD }}
           local-dir: ./
-          server-dir: ./franchise_backend
+          server-dir: ./franchise_backend/
           log-level : verbose
           exclude: |
             - .git
