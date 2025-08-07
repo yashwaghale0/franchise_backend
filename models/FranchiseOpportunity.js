@@ -10,7 +10,7 @@ const franchiseSchema = new mongoose.Schema({
   category: String,
   subcategory: String,
   businessModel: String,
-  keywords: String,
+  keywords: [String], // should be an array
   entityName: String,
   website: String,
   foundedDate: Date,
@@ -65,17 +65,13 @@ const franchiseSchema = new mongoose.Schema({
   youtubeUrl: String,
   brandVideoUrl: String,
   testimonialVideoUrl: String,
-  pressMentions: String,
+  pressMentions: [String], // should be an array
   galleryImages: [String],
   marketingBrochure: String,
   leadEmail: String,
   calendlyUrl: String,
   responseTime: String,
   fddFile: String,
-  brandLogo: String,
-  brandBanner: String,
-  marketingBrochure: String,
-  galleryImages: [String],
 
   createdAt: {
     type: Date,
