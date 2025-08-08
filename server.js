@@ -31,7 +31,8 @@ app.use("/api/opportunities", franchiseRoutes);
 app.use("/api/auth", authRoutes);
 
 // Ensure uploads dir exists
-if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+const uploadsPath = path.join(__dirname, "uploads");
+if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath);
 
 // Multer configuration
 const storage = multer.diskStorage({
