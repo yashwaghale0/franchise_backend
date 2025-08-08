@@ -1,3 +1,5 @@
+const slugify = require("slugify");
+
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -56,6 +58,11 @@ app.post(
   async (req, res) => {
     try {
       const formData = JSON.parse(req.body.formData);
+      // Add title (if not already added)
+      formData.title = req.body.title;
+
+      // Generate slug
+      formData.slug = slugify(formData.title, { lower: true, strict: true });
       const files = req.files;
       console.log(files);
 
