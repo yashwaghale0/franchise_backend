@@ -1,5 +1,4 @@
 const slugify = require("slugify");
-
 const express = require("express");
 const multer = require("multer");
 const path = require("path");
@@ -15,6 +14,9 @@ const authRoutes = require("./routes/authRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Fallback BASE_URL if not provided in .env
+const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
+
 // MongoDB connection
 mongoose
   .connect(process.env.MONGO_URI, {
@@ -22,7 +24,7 @@ mongoose
     useUnifiedTopology: true,
   })
   .then(() => console.log("✅ MongoDB Connected"))
-  .catch((err) => console.error("MongoDB Error:", err));
+  .catch((err) => console.error("❌ MongoDB Error:", err));
 
 app.use(cors());
 app.use(express.json());
@@ -37,14 +39,14 @@ if (!fs.existsSync(uploadsPath)) fs.mkdirSync(uploadsPath);
 // Multer configuration
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, path.join(__dirname, "uploads")); // ✅ Absolute path
+    cb(null, uploadsPath); // Absolute path
   },
   filename: function (req, file, cb) {
     const uniqueName = `${Date.now()}-${file.originalname}`;
     cb(null, uniqueName);
   },
 });
-const upload = multer({ storage: storage });
+const upload = multer({ storage });
 
 // Upload full form with multiple files
 app.post(
@@ -54,22 +56,32 @@ app.post(
     { name: "brandLogo", maxCount: 1 },
     { name: "brandBanner", maxCount: 1 },
     { name: "marketingBrochure", maxCount: 1 },
-    { name: "galleryImages", maxCount: 5 }, // Allow multiple gallery images
+    { name: "galleryImages", maxCount: 5 },
   ]),
   async (req, res) => {
     try {
-      const formData = JSON.parse(req.body.formData);
-      // Add title (if not already added)
-      formData.title = req.body.title;
+      console.log("📥 Raw req.body:", req.body);
+      console.log("📁 Uploaded files:", req.files);
 
-      // Generate slug
+      let formData;
+      try {
+        formData = JSON.parse(req.body.formData);
+      } catch (parseError) {
+        console.error("❌ Invalid JSON in formData:", parseError);
+        return res.status(400).json({
+          message: "Invalid JSON format in formData",
+          error: parseError.message,
+        });
+      }
+
+      formData.title = req.body.title;
       formData.slug = slugify(formData.title, { lower: true, strict: true });
-      const files = req.files;
-      console.log(files);
+
+      const files = req.files || {};
 
       const getFileUrl = (field) =>
         files[field] && files[field][0]
-          ? `${process.env.BASE_URL}/uploads/${files[field][0].filename}`
+          ? `${BASE_URL}/uploads/${files[field][0].filename}`
           : "";
 
       formData.fddFile = getFileUrl("fddFile");
@@ -79,9 +91,11 @@ app.post(
 
       formData.galleryImages = files.galleryImages
         ? files.galleryImages.map(
-            (img) => `${process.env.BASE_URL}/uploads/${img.filename}`
+            (img) => `${BASE_URL}/uploads/${img.filename}`
           )
         : [];
+
+      console.log("📦 Final parsed formData:", formData);
 
       const opportunity = new FranchiseOpportunity(formData);
       await opportunity.save();
@@ -91,8 +105,12 @@ app.post(
         data: opportunity,
       });
     } catch (error) {
-      console.error("Upload error:", error);
-      res.status(500).json({ message: "Server error", error });
+      console.error("❌ Upload error:", error);
+      res.status(500).json({
+        message: "Server error",
+        error: error.message || error,
+        stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
+      });
     }
   }
 );
@@ -119,5 +137,5 @@ app.get("/", (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
+  console.log(`🚀 Server running at ${BASE_URL}`);
 });
