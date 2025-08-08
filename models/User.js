@@ -19,6 +19,14 @@ const userSchema = new mongoose.Schema({
       "Other franchise service professional",
     ],
   },
+  resetPasswordToken: {
+    type: String,
+    default: null,
+  },
+  resetPasswordExpires: {
+    type: Date,
+    default: null,
+  },
 });
 
 module.exports = mongoose.model("User", userSchema);

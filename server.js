@@ -33,15 +33,15 @@ if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 
 // Multer configuration
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, "uploads/");
+  destination: function (req, file, cb) {
+    cb(null, path.join(__dirname, "uploads")); // ✅ Absolute path
   },
-  filename: (req, file, cb) => {
+  filename: function (req, file, cb) {
     const uniqueName = `${Date.now()}-${file.originalname}`;
     cb(null, uniqueName);
   },
 });
-const upload = multer({ storage });
+const upload = multer({ storage: storage });
 
 // Upload full form with multiple files
 app.post(
