@@ -61,9 +61,7 @@ app.post(
 
       const getFileUrl = (field) =>
         files[field] && files[field][0]
-          ? `${req.protocol}://${req.get("host")}/uploads/${
-              files[field][0].filename
-            }`
+          ? `${process.env.BASE_URL}/uploads/${files[field][0].filename}`
           : "";
 
       formData.fddFile = getFileUrl("fddFile");
@@ -73,8 +71,7 @@ app.post(
 
       formData.galleryImages = files.galleryImages
         ? files.galleryImages.map(
-            (img) =>
-              `${req.protocol}://${req.get("host")}/uploads/${img.filename}`
+            (img) => `${process.env.BASE_URL}/uploads/${img.filename}`
           )
         : [];
 
