@@ -49,6 +49,72 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 // Upload full form with multiple files
+// app.post(
+//   "/api/submit-form",
+//   upload.fields([
+//     { name: "fddFile", maxCount: 1 },
+//     { name: "brandLogo", maxCount: 1 },
+//     { name: "brandBanner", maxCount: 1 },
+//     { name: "marketingBrochure", maxCount: 1 },
+//     { name: "galleryImages", maxCount: 5 },
+//   ]),
+//   async (req, res) => {
+//     try {
+//       console.log("📥 Raw req.body:", req.body);
+//       console.log("📁 Uploaded files:", req.files);
+
+//       let formData;
+//       try {
+//         formData = JSON.parse(req.body.formData);
+//       } catch (parseError) {
+//         console.error("❌ Invalid JSON in formData:", parseError);
+//         return res.status(400).json({
+//           message: "Invalid JSON format in formData",
+//           error: parseError.message,
+//         });
+//       }
+
+//       formData.title = req.body.title;
+//       formData.slug = slugify(formData.title, { lower: true, strict: true });
+
+//       const files = req.files || {};
+
+//       const getFileUrl = (field) =>
+//         files[field] && files[field][0]
+//           ? `${BASE_URL}/uploads/${files[field][0].filename}`
+//           : "";
+
+//       formData.fddFile = getFileUrl("fddFile");
+//       formData.brandLogo = getFileUrl("brandLogo");
+//       formData.brandBanner = getFileUrl("brandBanner");
+//       formData.marketingBrochure = getFileUrl("marketingBrochure");
+
+//       formData.galleryImages = files.galleryImages
+//         ? files.galleryImages.map(
+//             (img) => `${BASE_URL}/uploads/${img.filename}`
+//           )
+//         : [];
+
+//       console.log("📦 Final parsed formData:", formData);
+
+//       const opportunity = new FranchiseOpportunity(formData);
+//       await opportunity.save();
+
+//       res.status(200).json({
+//         message: "Form and files uploaded successfully",
+//         data: opportunity,
+//       });
+//     } catch (error) {
+//       console.error("❌ Upload error:", error);
+//       res.status(500).json({
+//         message: "Server error",
+//         error: error.message || error,
+//         stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
+//       });
+//     }
+//   }
+// );
+
 app.post(
   "/api/submit-form",
   upload.fields([
@@ -63,22 +129,25 @@ app.post(
       console.log("📥 Raw req.body:", req.body);
       console.log("📁 Uploaded files:", req.files);
 
-      let formData;
-      try {
-        formData = JSON.parse(req.body.formData);
-      } catch (parseError) {
-        console.error("❌ Invalid JSON in formData:", parseError);
-        return res.status(400).json({
-          message: "Invalid JSON format in formData",
-          error: parseError.message,
-        });
+      // Step 1: Parse formData safely
+      let formData = {};
+      if (req.body.formData) {
+        try {
+          formData = JSON.parse(req.body.formData);
+        } catch (parseError) {
+          return res.status(400).json({
+            message: "Invalid JSON format in formData",
+            error: parseError.message,
+          });
+        }
       }
 
-      formData.title = req.body.title;
-      formData.slug = slugify(formData.title, { lower: true, strict: true });
+      // // Step 2: Add title & slug
+      // formData.title = req.body.title || formData.title || "Untitled";
+      // formData.slug = slugify(formData.title, { lower: true, strict: true });
 
+      // Step 3: Handle file uploads
       const files = req.files || {};
-
       const getFileUrl = (field) =>
         files[field] && files[field][0]
           ? `${BASE_URL}/uploads/${files[field][0].filename}`
@@ -88,28 +157,41 @@ app.post(
       formData.brandLogo = getFileUrl("brandLogo");
       formData.brandBanner = getFileUrl("brandBanner");
       formData.marketingBrochure = getFileUrl("marketingBrochure");
-
       formData.galleryImages = files.galleryImages
         ? files.galleryImages.map(
             (img) => `${BASE_URL}/uploads/${img.filename}`
           )
         : [];
 
-      console.log("📦 Final parsed formData:", formData);
+      // Step 4: Handle fddIssuanceDate
+      if (formData.fddIssuanceDate) {
+        const parsedDate = new Date(formData.fddIssuanceDate);
+        formData.fddIssuanceDate = isNaN(parsedDate) ? null : parsedDate;
+      } else {
+        formData.fddIssuanceDate = null;
+      }
 
-      const opportunity = new FranchiseOpportunity(formData);
-      await opportunity.save();
+      // Step 5: Save to DB
+      try {
+        const opportunity = new FranchiseOpportunity(formData);
+        await opportunity.save();
 
-      res.status(200).json({
-        message: "Form and files uploaded successfully",
-        data: opportunity,
-      });
+        return res.status(200).json({
+          message: "Form and files uploaded successfully",
+          data: opportunity,
+        });
+      } catch (dbError) {
+        console.error("❌ Mongoose save error:", dbError);
+        return res.status(400).json({
+          message: "Database validation failed",
+          error: dbError.message,
+        });
+      }
     } catch (error) {
-      console.error("❌ Upload error:", error);
-      res.status(500).json({
-        message: "Server error",
-        error: error.message || error,
-        stack: process.env.NODE_ENV !== "production" ? error.stack : undefined,
+      console.error("❌ Unexpected server error:", error);
+      return res.status(500).json({
+        message: "Unexpected server error",
+        error: error.message,
       });
     }
   }
