@@ -1,18 +1,26 @@
 const express = require("express");
-const { loginUser, signUp } = require("../controllers/authController");
-const router = express.Router();
 const bcrypt = require("bcrypt");
-const jwt = require("jsonwebtoken");
+const crypto = require("crypto");
+const { loginUser, signUp } = require("../controllers/authController");
+const { protect, verifyToken, isAdmin } = require("../middleware/auth");
 const User = require("../models/User");
-// const bcrypt = require("bcryptjs");
-// const jwt = require("jsonwebtoken");
-// const sendEmail = require("../utils/sendEmail"); // custom mailer function
+const {
+  createUserByAdmin,
+  updateMyProfile,
+  updateUserByAdmin,
+} = require("../controllers/userController");
+const sendEmail = require("../utils/sendEmail");
 
-// Register a new user
+const router = express.Router();
 
+// Auth routes
 router.post("/register", signUp);
-
 router.post("/login", loginUser);
+
+// Admin/User routes
+router.post("/create", verifyToken, isAdmin, createUserByAdmin);
+router.patch("/me", verifyToken, updateMyProfile);
+router.patch("/:id", verifyToken, isAdmin, updateUserByAdmin);
 
 // Forgot Password
 router.post("/forgot-password", async (req, res) => {
@@ -22,7 +30,6 @@ router.post("/forgot-password", async (req, res) => {
     const user = await User.findOne({ email });
     if (!user) return res.status(404).json({ msg: "User not found" });
 
-    // Create reset token
     const resetToken = crypto.randomBytes(32).toString("hex");
     const resetTokenExpiry = Date.now() + 3600000; // 1 hour
 
@@ -35,10 +42,7 @@ router.post("/forgot-password", async (req, res) => {
     await sendEmail(
       user.email,
       "Reset Your Password",
-      `
-      Click the link to reset your password: ${resetUrl}
-      This link expires in 1 hour.
-    `
+      `Click the link to reset your password: ${resetUrl}\nThis link expires in 1 hour.`
     );
 
     res.status(200).json({ msg: "Password reset link sent to email." });

@@ -31,6 +31,8 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/opportunities", franchiseRoutes);
 app.use("/api/auth", authRoutes);
+// app.use("/api/auth", require("./routes/auth"));
+// app.use("/api/users", require("./routes/users"));
 
 // Ensure uploads dir exists
 const uploadsPath = path.join(__dirname, "uploads");
@@ -157,6 +159,7 @@ app.post(
       formData.brandLogo = getFileUrl("brandLogo");
       formData.brandBanner = getFileUrl("brandBanner");
       formData.marketingBrochure = getFileUrl("marketingBrochure");
+
       formData.galleryImages = files.galleryImages
         ? files.galleryImages.map(
             (img) => `${BASE_URL}/uploads/${img.filename}`
