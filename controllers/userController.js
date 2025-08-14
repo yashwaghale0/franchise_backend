@@ -112,3 +112,24 @@ exports.updateUserByAdmin = async (req, res) => {
   );
   res.json({ user });
 };
+
+exports.savePersonalDetails = async (req, res) => {
+  try {
+    const { fullName, phone, address } = req.body;
+
+    const user = await User.findByIdAndUpdate(
+      req.user.id, // from protect middleware
+      { fullName, phone, address },
+      { new: true, runValidators: true }
+    );
+
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    res.status(200).json({ message: "Personal details saved", user });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+};

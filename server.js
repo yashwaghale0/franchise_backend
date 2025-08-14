@@ -5,7 +5,9 @@ const path = require("path");
 const cors = require("cors");
 const mongoose = require("mongoose");
 const fs = require("fs");
+const router = express.Router();
 require("dotenv").config();
+const nodemailer = require("nodemailer");
 
 const FranchiseOpportunity = require("./models/FranchiseOpportunity");
 const franchiseRoutes = require("./routes/franchiseRoutes");
@@ -13,6 +15,7 @@ const authRoutes = require("./routes/authRoutes");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const { getAllUsers } = require("./controllers/authController");
 
 // Fallback BASE_URL if not provided in .env
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -31,8 +34,12 @@ app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/opportunities", franchiseRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/auth", require("./routes/authRoutes"));
+
 // app.use("/api/auth", require("./routes/auth"));
 // app.use("/api/users", require("./routes/users"));
+
+router.get("/users", getAllUsers);
 
 // Ensure uploads dir exists
 const uploadsPath = path.join(__dirname, "uploads");
@@ -219,6 +226,83 @@ app.get("/api/images/:filename", (req, res) => {
 // Health check
 app.get("/", (req, res) => {
   res.send("📦 File Upload API is running");
+});
+
+const transporter = nodemailer.createTransport({
+  host: "smtp.hostinger.com",
+  port: 465,
+  secure: true,
+  auth: {
+    user: "yash@internetsoft.site",
+    pass: "Welcome2050$##",
+  },
+});
+
+app.post("/send-email", async (req, res) => {
+  const {
+    firstName,
+    lastName,
+    phone,
+    email,
+    selectedCountry,
+    selectedState,
+    selectedCity,
+    consent,
+  } = req.body;
+
+  const mailOptions = {
+    from: '"Franchise Form" <yash@internetsoft.site>', // must match SMTP user
+    to: "yash@internetsoft.com, abhi@internetsoft.com, developer@franchiselistings.com, signup@franchiselistings.com",
+    subject: "New Franchise Enquiry",
+    text: `
+      First Name: ${firstName}
+      Last Name: ${lastName}
+      Phone: ${phone}
+      Email: ${email}
+      Country: ${selectedCountry}
+      State: ${selectedState}
+      City: ${selectedCity}
+      Consent: ${consent ? "Yes" : "No"}
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    console.log("✅ Email sent successfully");
+    res.send("Email sent successfully");
+  } catch (err) {
+    console.error("❌ Error sending email:", err);
+    res.status(500).send("Error sending email");
+  }
+});
+
+// Franability From Submission
+
+app.post("/franability-send", async (req, res) => {
+  const { state, investment, monthlyIncome, annualIncome, debt, creditScore } =
+    req.body;
+
+  const mailOptions = {
+    from: '"FranAbility Form" <yash@internetsoft.site>',
+    to: "yash@internetsoft.com, abhi@internetsoft.com, developer@franchiselistings.com, signup@franchiselistings.com",
+    subject: "New FranAbility Inquiry",
+    text: `
+      State: ${state}
+      Investment: ${investment}
+      Monthly Income Goal: ${monthlyIncome}
+      Annual Income: ${annualIncome}
+      Debt: ${debt}
+      Credit Score: ${creditScore}
+    `,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).send("Email sent successfully!");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error sending email");
+  }
 });
 
 app.listen(PORT, () => {

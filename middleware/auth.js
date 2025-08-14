@@ -37,10 +37,9 @@ const verifyToken = async (req, res, next) => {
 };
 
 const isAdmin = (req, res, next) => {
-  // adjust role name check if your role names differ
   if (
     req.user &&
-    (req.user.role === "Super Admin" || req.user.role === "admin")
+    ["super admin", "admin"].includes(req.user.role?.toLowerCase())
   ) {
     return next();
   }

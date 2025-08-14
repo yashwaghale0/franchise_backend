@@ -1,7 +1,11 @@
 const express = require("express");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
-const { loginUser, signUp } = require("../controllers/authController");
+const {
+  loginUser,
+  signUp,
+  getAllUsers,
+} = require("../controllers/authController");
 const { protect, verifyToken, isAdmin } = require("../middleware/auth");
 const User = require("../models/User");
 const {
@@ -10,15 +14,21 @@ const {
   updateUserByAdmin,
 } = require("../controllers/userController");
 const sendEmail = require("../utils/sendEmail");
+const { savePersonalDetails } = require("../controllers/userController");
 
 const router = express.Router();
+
+router.post("/personal-details", protect, savePersonalDetails);
 
 // Auth routes
 router.post("/register", signUp);
 router.post("/login", loginUser);
 
+// Fetch all users
+router.get("/users", getAllUsers);
+
 // Admin/User routes
-router.post("/create", verifyToken, isAdmin, createUserByAdmin);
+// router.post("/create", verifyToken, isAdmin, createUserByAdmin);
 router.patch("/me", verifyToken, updateMyProfile);
 router.patch("/:id", verifyToken, isAdmin, updateUserByAdmin);
 
@@ -75,6 +85,25 @@ router.post("/reset-password/:token", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ msg: "Server error" });
+  }
+});
+
+router.post("/personal-details", verifyToken, async (req, res) => {
+  try {
+    const { fullName, phone, address } = req.body;
+
+    // Save details to DB (example with Mongoose)
+    const userId = req.user.id; // From verifyToken
+    await User.findByIdAndUpdate(userId, {
+      fullName,
+      phone,
+      address,
+    });
+
+    res.status(200).json({ message: "Personal details saved successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
   }
 });
 

@@ -24,6 +24,17 @@ exports.signUp = async (req, res) => {
       expiresIn: "1d",
     });
 
+    if (res.status === 201 || res.status === 200) {
+      alert("Signup successful!");
+
+      localStorage.setItem("token", res.data.token);
+      const userRole = res.data.user?.role || signupRole;
+      localStorage.setItem("userRole", userRole);
+
+      // Navigate to personal details page
+      navigate("/personal-details");
+    }
+
     res.status(201).json({
       token,
       user: { id: newUser._id, email: newUser.email, role: newUser.role },
@@ -54,5 +65,15 @@ exports.loginUser = async (req, res) => {
     });
   } catch (err) {
     res.status(500).json({ msg: "Server error" });
+  }
+};
+
+exports.getAllUsers = async (req, res) => {
+  try {
+    const users = await User.find().select("-password"); // hide passwords
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
