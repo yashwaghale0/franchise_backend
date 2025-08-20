@@ -16,6 +16,7 @@ const authRoutes = require("./routes/authRoutes");
 const app = express();
 const PORT = process.env.PORT || 5000;
 const { getAllUsers } = require("./controllers/authController");
+const flsRoutes = require("./routes/franchise");
 
 // Fallback BASE_URL if not provided in .env
 const BASE_URL = process.env.BASE_URL || `http://localhost:${PORT}`;
@@ -35,6 +36,7 @@ app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 app.use("/api/opportunities", franchiseRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", require("./routes/authRoutes"));
+app.use("/api/fls", flsRoutes);
 
 // app.use("/api/auth", require("./routes/auth"));
 // app.use("/api/users", require("./routes/users"));
@@ -183,6 +185,17 @@ app.post(
 
       // Step 5: Save to DB
       try {
+        // 🔹 Find the last saved record to get the highest FLS number
+        const lastDoc = await FranchiseOpportunity.findOne().sort({
+          flsNumber: -1,
+        });
+
+        // 🔹 Auto-increment (if no record, start with 1)
+        const nextFlsNumber = lastDoc ? lastDoc.flsNumber + 1 : 1;
+
+        // 🔹 Attach to formData
+        formData.flsNumber = nextFlsNumber;
+
         const opportunity = new FranchiseOpportunity(formData);
         await opportunity.save();
 
@@ -279,20 +292,36 @@ app.post("/send-email", async (req, res) => {
 // Franability From Submission
 
 app.post("/franability-send", async (req, res) => {
-  const { state, investment, monthlyIncome, annualIncome, debt, creditScore } =
-    req.body;
+  const {
+    firstName,
+    lastName,
+    phone,
+    email,
+    Country,
+    state,
+    city,
+    franchiseType,
+    cashOnHand,
+    totalAssets,
+    monthlyDebt,
+  } = req.body;
 
   const mailOptions = {
     from: '"FranAbility Form" <yash@internetsoft.site>',
     to: "yash@internetsoft.com, abhi@internetsoft.com, developer@franchiselistings.com, signup@franchiselistings.com",
     subject: "New FranAbility Inquiry",
     text: `
+      First Name: ${firstName}
+      Last Name: ${lastName}
+      Phone: ${phone}
+      Email: ${email}
+      Franchise Type: ${franchiseType}
+      Cash on Hand: ${cashOnHand}
+      Total Assets: ${totalAssets}
+      Monthly Debt: ${monthlyDebt}
+      Country: ${Country}
       State: ${state}
-      Investment: ${investment}
-      Monthly Income Goal: ${monthlyIncome}
-      Annual Income: ${annualIncome}
-      Debt: ${debt}
-      Credit Score: ${creditScore}
+      City: ${city}
     `,
   };
 

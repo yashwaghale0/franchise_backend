@@ -107,4 +107,18 @@ router.post("/personal-details", verifyToken, async (req, res) => {
   }
 });
 
+// Get latest FLS
+router.get("/latest", async (req, res) => {
+  try {
+    const latestFLS = await FLS.findOne().sort({ createdAt: -1 }); // get last entry
+    if (!latestFLS) {
+      return res.status(404).json({ message: "No FLS found" });
+    }
+    res.json(latestFLS);
+  } catch (error) {
+    console.error("Error fetching FLS:", error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
 module.exports = router;

@@ -2,8 +2,9 @@ const mongoose = require("mongoose");
 
 const franchiseSchema = new mongoose.Schema({
   // slug: { type: String, unique: true },
-  flsNumber: String,
+  // flsNumber: String,
   customSlug: String,
+  flsNumber: { type: String, unique: true },
   brandName: String,
   brandLogo: String,
   brandBanner: String,
